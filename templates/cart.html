@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Your Cart</h2>
+{% if cart_items %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Quantity</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in cart_items %}
+        <tr>
+            <td>{{ item[1] }}</td>
+            <td>₹{{ item[2] }}</td>
+            <td>{{ item[3] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="{{ url_for('clear_cart') }}" class="btn btn-danger">Clear Cart</a>
+<a href="{{ url_for('index') }}" class="btn btn-secondary">Continue Shopping</a>
+{% else %}
+<p>Your cart is empty.</p>
+<a href="{{ url_for('index') }}" class="btn btn-primary">Shop Products</a>
+{% endif %}
+{% endblock %}
