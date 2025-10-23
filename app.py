@@ -65,18 +65,28 @@ def buy_now(product_id):
 
     return render_template('checkout.html', product=product)
 
-# Cart page
 @app.route('/cart')
 def cart():
     cur = mysql.connection.cursor()
     cur.execute("""
-        SELECT cart.id, products.name, products.price, cart.quantity
+        SELECT 
+            products.id,
+            products.name,
+            products.price,
+            products.image,  -- assuming column name is image or similar
+            SUM(cart.quantity) AS total_quantity
         FROM cart
         JOIN products ON cart.product_id = products.id
+        GROUP BY products.id, products.name, products.price, products.image
     """)
     cart_items = cur.fetchall()
     cur.close()
-    return render_template('cart.html', cart_items=cart_items)
+
+    # Calculate total amount
+    total_amount = sum(item[2] * item[4] for item in cart_items)
+
+    return render_template('cart.html', cart_items=cart_items, total_amount=total_amount)
+
 
 # Add to cart
 @app.route('/add_to_cart/<int:product_id>')
@@ -97,6 +107,7 @@ def clear_cart():
     cur.close()
     flash("Cart cleared ✅")
     return redirect('/')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
