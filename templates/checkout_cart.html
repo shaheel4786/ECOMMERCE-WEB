@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Checkout</h2>
+
+    {% if cart_items %}
+    <table class="table table-bordered text-center align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Image</th>
+                <th>Product</th>
+                <th>Price (₹)</th>
+                <th>Quantity</th>
+                <th>Total (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart_items %}
+            <tr>
+                <td><img src="{{ url_for('static', filename='images/' + item['image']) }}" alt="{{ item['name'] }}" width="80"></td>
+                <td>{{ item['name'] }}</td>
+                <td>{{ item['price'] }}</td>
+                <td>{{ item['total_quantity'] }}</td>
+                <td>{{ item['price'] * item['total_quantity'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Right-aligned Proceed to Buy button -->
+    <div class="text-end mt-3">
+        <a href="{{ url_for('buy_now', product_id=cart_items[0]['id']) }}" class="btn btn-lg text-white" style="background: linear-gradient(90deg, #ff416c, #ff4b2b);">
+            Proceed to Buy
+        </a>
+    </div>
+
+    {% else %}
+    <p>Your cart is empty.</p>
+    {% endif %}
+</div>
+{% endblock %}

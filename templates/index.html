@@ -1,7 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Products</h2>
+<h1 align="center"><U><I>PRODUCTS</I></U></h1>
 <div class="row">
+    <!-- place near top of index.html, inside the container -->
+<div class="row mb-4">
+  <div class="col-12">
+    <form class="d-flex" action="{{ url_for('search') }}" method="get">
+      <input class="form-control me-2" type="search" name="query" placeholder="Search products..." aria-label="Search" value="{{ request.args.get('query', '') }}">
+      <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+  </div>
+</div>
+
     {% for product in products %}
     <div class="col-md-4 mb-4">
         <div class="card h-100">
