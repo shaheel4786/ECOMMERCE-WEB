@@ -1,9 +1,38 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_mysqldb import MySQL
+import razorpay
+from flask import request, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+
+
+# Replace these with your actual Razorpay keys
+RAZORPAY_KEY_ID = "ENTER YOUR RAZORPAY_KEY_ID"
+RAZORPAY_KEY_SECRET = "ENTER YOUR RAZORPAY_KEY_SECRET"
+
+# Initialize Razorpay client
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 
 app = Flask(__name__)
 app.secret_key = 'shaheel123'
+@app.route('/create_order', methods=['POST'])
+def create_order():
+    amount = int(float(request.form['amount']) * 100)  # Convert safely to paise
+    currency = "INR"
+
+    data = {
+        "amount": amount,
+        "currency": currency,
+        "payment_capture": 1
+    }
+
+    order = razorpay_client.order.create(data=data)
+    return jsonify({
+        "key": RAZORPAY_KEY_ID,
+        "amount": amount,
+        "currency": currency,
+        "order_id": order['id']
+    })
 
 # MySQL configuration
 app.config['MYSQL_HOST'] = 'localhost'
@@ -12,6 +41,7 @@ app.config['MYSQL_PASSWORD'] = '123456789'
 app.config['MYSQL_DB'] = 'ecommerce_db'
 
 mysql = MySQL(app)
+@app.route('/payment_success', methods=['POST'])
 
 # Home page - list all products
 @app.route('/')
@@ -21,6 +51,18 @@ def index():
     products = cur.fetchall()
     cur.close()
     return render_template('index.html', products=products)
+@app.route('/add_balance', methods=['GET', 'POST'])
+def add_balance():
+    if request.method == 'POST':
+        amount = float(request.form['amount'])
+        user_id = session.get('user_id')
+        order = razorpay_client.order.create({
+            'amount': int(amount * 100),  # in paise
+            'currency': 'INR',
+            'payment_capture': 1
+        })
+        return render_template('payment.html', order=order, amount=amount)
+    return render_template('add_balance.html') 
 
 # Search products
 @app.route('/search')
@@ -55,21 +97,16 @@ def product_detail(product_id):
 
 # Buy Now page
 @app.route('/buy_now/<int:product_id>', methods=['GET', 'POST'])
+@app.route('/buy_now/<int:product_id>')
 def buy_now(product_id):
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM products WHERE id = %s", (product_id,))
     product = cur.fetchone()
     cur.close()
 
-    if request.method == 'POST':
-        name = request.form['name']
-        phone = request.form['phone']
-        address = request.form['address']
-        # Optional: save order to database
-        flash(f"✅ Order placed successfully! Thank you {name} for purchasing {product[1]}.")
-        return redirect('/')
+    # Send product info to Razorpay JS
+    return render_template('buy_now.html', product=product, razorpay_key=RAZORPAY_KEY_ID)
 
-    return render_template('checkout.html', product=product)
 @app.route('/update_quantity/<int:product_id>', methods=['POST'])
 def update_quantity(product_id):
     new_quantity = int(request.form['quantity'])
@@ -186,5 +223,39 @@ def remove_from_cart(product_id):
     return redirect(url_for('cart'))
 
 
+@app.route('/balance')
+def balance():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect('/login')
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT balance FROM users WHERE id = %s", (user_id,))
+    result = cur.fetchone()
+    cur.close()
+
+    if result:
+        balance = result[0]
+    else:
+        balance = 0.0
+
+    return render_template("balance.html", balance=balance)
+@app.route('/payment_success', methods=['POST'])
+
+def payment_success():
+    data = request.get_json()
+    user_id = session.get('user_id')
+    if not user_id:
+        return "Login required", 403
+
+    amount = int(data.get('amount')) / 100  # Convert paise to rupees
+
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (amount, user_id))
+    mysql.connection.commit()
+    cur.close()
+
+    return "Payment successful! Wallet updated."
+ 
 if __name__ == '__main__':
     app.run(debug=True)

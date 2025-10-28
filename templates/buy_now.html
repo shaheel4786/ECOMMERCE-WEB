@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4 text-center">Buy Now - {{ product[1] }}</h2>
+
+    <div class="text-center">
+        <img src="{{ url_for('static', filename='images/' ~ product[4]) }}" width="150" class="mb-3">
+        <h3>{{ product[1] }}</h3>
+        <p>₹{{ product[3] }}</p>
+
+        <button id="rzp-button" class="btn btn-lg text-white"
+            style="background: linear-gradient(135deg, #f72585 0%, #7209b7 100%);
+                   border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            Pay Now
+        </button>
+    </div>
+</div>
+
+<!-- Razorpay Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const button = document.getElementById('rzp-button');
+    button.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        // Create order via Flask
+        fetch("/create_order", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "amount={{ product[3] }}"
+        })
+        .then(response => response.json())
+        .then(data => {
+            const options = {
+                "key": data.key,
+                "amount": data.amount,
+                "currency": data.currency,
+                "name": "My E-Commerce",
+                "description": "{{ product[1] }} Purchase",
+                "order_id": data.order_id,
+                "handler": function (response) {
+                    // On successful payment
+                    alert("✅ Payment Successful! ID: " + response.razorpay_payment_id);
+                    window.location.href = "/";
+                },
+                "theme": { "color": "#f72585" }
+            };
+            const rzp1 = new Razorpay(options);
+            rzp1.open();
+        })
+        .catch(error => console.error("Error creating Razorpay order:", error));
+    });
+});
+</script>
+{% endblock %}
