@@ -6,8 +6,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 
 
 # Replace these with your actual Razorpay keys
-RAZORPAY_KEY_ID = "ENTER YOUR RAZORPAY_KEY_ID"
-RAZORPAY_KEY_SECRET = "ENTER YOUR RAZORPAY_KEY_SECRET"
+RAZORPAY_KEY_ID = "rzp_test_RXNQ8civMhBuIc"
+RAZORPAY_KEY_SECRET = "NU9pMp2m44Ld64eewteDUKQJ"
 
 # Initialize Razorpay client
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
@@ -241,21 +241,31 @@ def balance():
 
     return render_template("balance.html", balance=balance)
 @app.route('/payment_success', methods=['POST'])
-
 def payment_success():
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "No payment data received"}), 400
+
+    payment_id = data.get('razorpay_payment_id')
+    order_id = data.get('razorpay_order_id')
+    signature = data.get('razorpay_signature')
+
+    # Optional: verify signature for security (you can add later)
+
     user_id = session.get('user_id')
     if not user_id:
-        return "Login required", 403
+        return jsonify({"error": "Login required"}), 403
 
-    amount = int(data.get('amount')) / 100  # Convert paise to rupees
+    # Convert amount from paise to rupees
+    amount = float(data.get('amount', 0)) / 100
 
     cur = mysql.connection.cursor()
     cur.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (amount, user_id))
     mysql.connection.commit()
     cur.close()
 
-    return "Payment successful! Wallet updated."
+    return jsonify({"message": "Payment successful! Wallet updated."})
+
  
 if __name__ == '__main__':
     app.run(debug=True)
