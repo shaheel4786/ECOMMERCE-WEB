@@ -6,8 +6,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 
 
 # Replace these with your actual Razorpay keys
-RAZORPAY_KEY_ID = "rzp_test_RXNQ8civMhBuIc"
-RAZORPAY_KEY_SECRET = "NU9pMp2m44Ld64eewteDUKQJ"
+RAZORPAY_KEY_ID = "YOUR RAZORPAY_KEY_ID"
+RAZORPAY_KEY_SECRET = "RAZORPAY_KEY_ID RAZORPAY_KEY_SECRET"
 
 # Initialize Razorpay client
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
